@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 const Signup = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const navigate = useNavigate()
 
-  const handleSignup = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     if (!email || !password || !confirmPassword) {
       setError('Please fill in all fields.')
       return
@@ -16,81 +19,113 @@ const Signup = () => {
       setError('Passwords do not match.')
       return
     }
-    setError('')
-    // Placeholder for signup logic (e.g., API call)
-    console.log('Signing up with:', { email, password })
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/auth/signup/', {
+        email,
+        password,
+      })
+      // Store the token in localStorage
+      localStorage.setItem('token', response.data.token)
+      setError('')
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err.response?.data?.email?.[0] || 'Signup failed. Please try again.')
+    }
+  }
+
+  const handleGoogleLogin = () => {
+    // Redirect to Django Allauth's Google login URL
+    window.location.href = 'http://localhost:8000/accounts/google/login/'
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 w-full max-w-md">
+      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg w-full max-w-md">
+        {/* Logo */}
         <div className="flex justify-center mb-6">
           <img 
-            src="/src/assets/closetai-logo.png" 
+            src="/src/assets/closetai-logo.jpg" 
             alt="ClosetAI Logo" 
-            className="h-12 w-auto"
+            className="h-12 md:h-14 w-auto"
           />
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Sign Up for ClosetAI</h2>
-        {error && <p className="error-message text-red-500 text-sm mb-4 text-center">{error}</p>}
-        <div className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="input-field w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="input-field w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="input-field w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+
+        {/* Title */}
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-6">Sign Up for ClosetAI</h2>
+
+        {/* Error Message */}
+        {error && (
+          <div className="error-message bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center opacity-0 animate-fadeIn">
+            {error}
+          </div>
+        )}
+
+        {/* Signup Form */}
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-gray-700 font-medium mb-2">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input-field w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              placeholder="Enter your email"
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="password" className="block text-gray-700 font-medium mb-2">Password</label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              placeholder="Enter your password"
+            />
+          </div>
+          <div className="mb-6">
+            <label htmlFor="confirm-password" className="block text-gray-700 font-medium mb-2">Confirm Password</label>
+            <input
+              type="password"
+              id="confirm-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="input-field w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              placeholder="Confirm your password"
+            />
+          </div>
           <button
-            onClick={handleSignup}
-            className="gradient-btn w-full py-2 rounded-lg text-white font-medium"
+            type="submit"
+            className="gradient-btn w-full py-3 rounded-lg text-white font-medium text-sm md:text-base"
           >
             Sign Up
           </button>
-          <button
-            onClick={() => console.log('Google signup')}
-            className="google-btn w-full py-2 rounded-lg border border-gray-300 text-gray-700 font-medium flex items-center justify-center gap-2"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fill="#4285F4"
-              />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1.01.68-2.3 1.08-3.71 1.08-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C4.01 20.49 7.72 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.72 1 4.01 3.51 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-            Sign up with Google
-          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="flex items-center my-6">
+          <div className="flex-1 border-t border-gray-300"></div>
+          <span className="mx-4 text-gray-500 text-sm">OR</span>
+          <div className="flex-1 border-t border-gray-300"></div>
         </div>
-        <p className="text-center text-gray-600 text-sm mt-4">
+
+        {/* Google Sign-In */}
+        <button
+          onClick={handleGoogleLogin}
+          className="google-btn w-full py-3 border border-gray-300 rounded-lg text-gray-700 font-medium text-sm md:text-base flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.37 0 0 5.37 0 12C0 18.63 5.37 24 12 24C18.63 24 24 18.63 24 12C24 5.37 18.63 0 12 0ZM12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM12 4C8.69 4 6 6.69 6 10C6 13.31 8.69 16 12 16C15.31 16 18 13.31 18 10C18 6.69 15.31 4 12 4ZM12 6C14.21 6 16 7.79 16 10C16 12.21 14.21 14 12 14C9.79 14 8 12.21 8 10C8 7.79 9.79 6 12 6ZM12 8C10.9 8 10 8.9 10 10C10 11.1 10.9 12 12 12C13.1 12 14 11.1 14 10C14 8.9 13.1 8 12 8Z" fill="#4285F4"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        {/* Login Link */}
+        <p className="text-center mt-6 text-gray-600 text-sm">
           Already have an account?{' '}
-          <Link to="/login" className="link-hover text-indigo-600 hover:underline">
-            Login
-          </Link>
+          <a href="/frontend_ai/login" className="text-indigo-600 font-medium link-hover">Login</a>
         </p>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -7,17 +8,30 @@ const Login = () => {
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || !password) {
       setError('Please fill in all fields.')
       return
     }
-    setError('')
-    // Placeholder for login logic (e.g., API call)
-    console.log('Login submitted:', { email, password })
-    // Redirect to dashboard after successful login
-    navigate('/dashboard')
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/auth/login/', {
+        email,
+        password,
+      })
+      // Store the token in localStorage
+      localStorage.setItem('token', response.data.token)
+      setError('')
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err.response?.data?.error || 'Login failed. Please try again.')
+    }
+  }
+
+  const handleGoogleLogin = () => {
+    // Redirect to Django Allauth's Google login URL
+    window.location.href = 'http://localhost:8000/accounts/google/login/'
   }
 
   return (
@@ -82,7 +96,10 @@ const Login = () => {
         </div>
 
         {/* Google Sign-In */}
-        <button className="google-btn w-full py-3 border border-gray-300 rounded-lg text-gray-700 font-medium text-sm md:text-base flex items-center justify-center gap-2">
+        <button
+          onClick={handleGoogleLogin}
+          className="google-btn w-full py-3 border border-gray-300 rounded-lg text-gray-700 font-medium text-sm md:text-base flex items-center justify-center gap-2"
+        >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 0C5.37 0 0 5.37 0 12C0 18.63 5.37 24 12 24C18.63 24 24 18.63 24 12C24 5.37 18.63 0 12 0ZM12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM12 4C8.69 4 6 6.69 6 10C6 13.31 8.69 16 12 16C15.31 16 18 13.31 18 10C18 6.69 15.31 4 12 4ZM12 6C14.21 6 16 7.79 16 10C16 12.21 14.21 14 12 14C9.79 14 8 12.21 8 10C8 7.79 9.79 6 12 6ZM12 8C10.9 8 10 8.9 10 10C10 11.1 10.9 12 12 12C13.1 12 14 11.1 14 10C14 8.9 13.1 8 12 8Z" fill="#4285F4"/>
           </svg>
