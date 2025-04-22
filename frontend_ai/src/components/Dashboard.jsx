@@ -1,9 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const Dashboard = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [user, setUser] = useState(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const userData = localStorage.getItem('user')
+    if (!token) {
+      navigate('/login')
+    } else if (userData) {
+      setUser(JSON.parse(userData))
+    }
+  }, [navigate])
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
@@ -11,7 +22,12 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
     navigate('/login')
+  }
+
+  if (!user) {
+    return <div>Loading...</div>
   }
 
   return (
@@ -51,7 +67,7 @@ const Dashboard = () => {
               alt="User Avatar" 
               className="w-10 h-10 md:w-12 md:h-12 rounded-full mr-3"
             />
-            <span className="text-gray-800 font-semibold text-base md:text-lg">Clara Meyer</span>
+            <span className="text-gray-800 font-semibold text-base md:text-lg">{user.full_name}</span>
           </div>
 
           {/* Navigation */}
@@ -102,9 +118,11 @@ const Dashboard = () => {
         {/* Main Content */}
         <div className="flex-1">
           <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-10 md:ml-64">
-            {/* Welcome Message with proper spacing from menu button */}
+            {/* Welcome Message */}
             <div className="pt-12 md:pt-0">
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mb-6 md:mb-8 lg:mb-10">Welcome back, Clara</h1>
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mb-6 md:mb-8 lg:mb-10">
+                Welcome back, {user.full_name.split(' ')[0]}
+              </h1>
             </div>
 
             {/* Wardrobe Section */}

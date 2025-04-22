@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure error messages are visible and styled */
+.error-message {
+  background-color: #fee2e2; /* Tailwind's bg-red-50 equivalent */
+  color: #dc2626; /* Tailwind's text-red-600 equivalent */
+  padding: 0.75rem; /* Tailwind's p-3 */
+  border-radius: 0.5rem; /* Tailwind's rounded-lg */
+  margin-bottom: 1rem; /* Tailwind's mb-4 */
+  font-size: 0.875rem; /* Tailwind's text-sm */
+  text-align: center;
+  opacity: 1; /* Ensure it's fully visible */
+}
+
+/* Optional: Define the fadeIn animation if you want to keep it */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in forwards;
+}
+
 .gradient-btn {
     background: linear-gradient(90deg, #6c63ff, #8a4af3);
     transition: transform 0.2s ease-in-out, box-shadow 0.3s ease;

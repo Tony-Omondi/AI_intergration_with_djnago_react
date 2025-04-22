@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 const Signup = () => {
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -11,7 +12,9 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!email || !password || !confirmPassword) {
+    setError('')
+
+    if (!fullName || !email || !password || !confirmPassword) {
       setError('Please fill in all fields.')
       return
     }
@@ -22,20 +25,23 @@ const Signup = () => {
 
     try {
       const response = await axios.post('http://localhost:8000/api/auth/signup/', {
+        full_name: fullName,
         email,
         password,
       })
-      // Store the token in localStorage
       localStorage.setItem('token', response.data.token)
-      setError('')
+      localStorage.setItem('user', JSON.stringify(response.data.user))
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.email?.[0] || 'Signup failed. Please try again.')
+      if (err.response?.data?.error?.email) {
+        setError(err.response.data.error.email[0])
+      } else {
+        setError('Signup failed. Please try again.')
+      }
     }
   }
 
   const handleGoogleLogin = () => {
-    // Redirect to Django Allauth's Google login URL
     window.location.href = 'http://localhost:8000/accounts/google/login/'
   }
 
@@ -56,13 +62,24 @@ const Signup = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="error-message bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center opacity-0 animate-fadeIn">
+          <div className="error-message">
             {error}
           </div>
         )}
 
         {/* Signup Form */}
         <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="full-name" className="block text-gray-700 font-medium mb-2">Full Name</label>
+            <input
+              type="text"
+              id="full-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="input-field w-full p-3 border border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              placeholder="Enter your full name"
+            />
+          </div>
           <div className="mb-4">
             <label htmlFor="email" className="block text-gray-700 font-medium mb-2">Email</label>
             <input

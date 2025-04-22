@@ -10,6 +10,8 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+
     if (!email || !password) {
       setError('Please fill in all fields.')
       return
@@ -20,9 +22,8 @@ const Login = () => {
         email,
         password,
       })
-      // Store the token in localStorage
       localStorage.setItem('token', response.data.token)
-      setError('')
+      localStorage.setItem('user', JSON.stringify(response.data.user))
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please try again.')
@@ -30,7 +31,6 @@ const Login = () => {
   }
 
   const handleGoogleLogin = () => {
-    // Redirect to Django Allauth's Google login URL
     window.location.href = 'http://localhost:8000/accounts/google/login/'
   }
 
@@ -51,7 +51,7 @@ const Login = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="error-message bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center opacity-0 animate-fadeIn">
+          <div className="error-message">
             {error}
           </div>
         )}

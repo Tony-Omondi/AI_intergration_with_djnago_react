@@ -9,9 +9,10 @@ const GoogleCallback = () => {
     const fetchToken = async () => {
       try {
         const response = await axios.get('http://localhost:8000/api/auth/google/callback/', {
-          withCredentials: true, // Include cookies for session authentication
+          withCredentials: true,
         })
         localStorage.setItem('token', response.data.token)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
         navigate('/dashboard')
       } catch (err) {
         console.error('Google login failed:', err)
