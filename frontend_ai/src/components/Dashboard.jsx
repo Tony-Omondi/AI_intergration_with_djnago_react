@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
-const BASE_URL = 'http://localhost:8000' // Add base URL for the backend
+const BASE_URL = 'http://localhost:8000'
 
 const Dashboard = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -17,15 +18,18 @@ const Dashboard = () => {
           navigate('/frontend_ai/login')
           return
         }
-        const response = await axios.get('http://localhost:8000/api/auth/profile/', {
+        
+        setIsLoading(true)
+        const response = await axios.get(`${BASE_URL}/api/auth/profile/`, {
           headers: { Authorization: `Token ${token}` },
         })
-        console.log('User API Response:', response.data)
         setUser(response.data)
       } catch (err) {
         console.error('Failed to fetch user:', err)
         localStorage.removeItem('token')
         navigate('/frontend_ai/login')
+      } finally {
+        setIsLoading(false)
       }
     }
     fetchUser()
@@ -37,207 +41,343 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    navigate('/frontend_ai/login')
+    navigate('/frontend_ai/')
   }
 
-  if (!user) {
-    return <div>Loading...</div>
-  }
-
-  // Ensure profile picture URL is absolute
-  const profilePictureUrl = user.profile.profile_picture 
+  const profilePictureUrl = user?.profile?.profile_picture 
     ? user.profile.profile_picture.startsWith('http') 
       ? user.profile.profile_picture 
       : `${BASE_URL}${user.profile.profile_picture}`
     : null
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
-      {/* Sidebar Overlay (Mobile Only) */}
-      <div 
-        className={`sidebar-overlay ${isOpen ? 'open' : ''}`} 
-        onClick={toggleSidebar}
-      ></div>
-
-      {/* Sidebar Toggle for Mobile */}
+      {/* Mobile Sidebar Toggle */}
       <button 
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md" 
+        className={`md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md transition-all ${isOpen ? 'transform rotate-90' : ''}`}
         onClick={toggleSidebar}
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
       </button>
 
-      <div className="flex flex-1 flex-col md:flex-row">
+      {/* Sidebar Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity ${isOpen ? 'opacity-100 md:opacity-0' : 'opacity-0 pointer-events-none'} md:hidden`}
+        onClick={toggleSidebar}
+      ></div>
+
+      <div className="flex flex-1">
         {/* Sidebar */}
-        <div className={`sidebar w-64 bg-white shadow-lg p-4 md:p-6 flex flex-col fixed md:static h-full z-50 ${isOpen ? 'open' : ''}`}>
-          {/* Logo */}
-          <div className="flex justify-center mb-6 md:mb-8">
-            <img 
-              src="/src/assets/closetai-logo.jpg" 
-              alt="ClosetAI Logo" 
-              className="h-12 md:h-14 w-auto"
-            />
-          </div>
-
-          {/* User Info */}
-          <div className="flex items-center mb-6 md:mb-8">
-            {profilePictureUrl ? (
+        <aside className={`fixed md:relative inset-y-0 left-0 w-64 bg-white shadow-lg z-40 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+          <div className="flex flex-col h-full p-6">
+            {/* Logo */}
+            <div className="flex justify-center mb-8">
               <img 
-                src={profilePictureUrl} 
-                alt="User Avatar" 
-                className="w-10 h-10 md:w-12 md:h-12 rounded-full mr-3 object-cover"
+                src="/src/assets/closetai-logo.jpg" 
+                alt="ClosetAI Logo" 
+                className="h-12 w-auto transition-opacity hover:opacity-90"
               />
-            ) : (
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 mr-3">
-                <span className="text-sm md:text-base">{user.profile.full_name[0]}</span>
-              </div>
-            )}
-            <span className="text-gray-800 font-semibold text-base md:text-lg">{user.profile.full_name}</span>
-          </div>
+            </div>
 
-          {/* Navigation */}
-          <nav className="flex-1">
-            <a href="/frontend_ai/dashboard" className="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-800 font-medium mb-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-              </svg>
-              Home
-            </a>
-            <a href="#" className="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium mb-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-              </svg>
-              My Closet
-            </a>
-            <a href="#" className="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium mb-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              Events
-              <span className="ml-auto bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-1 rounded-full">12</span>
-            </a>
-            <a href="#" className="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium mb-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 9.143l-5.714 2.714L13 21l-2.286-6.857L5 11.857l5.714-2.714L13 3z"></path>
-              </svg>
-              Recommendations
-            </a>
-            <a href="/frontend_ai/profile" className="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium mb-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-              </svg>
-              Profile
-            </a>
+            {/* User Profile */}
+            <div className="flex items-center mb-8 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              {profilePictureUrl ? (
+                <img 
+                  src={profilePictureUrl} 
+                  alt="User Avatar" 
+                  className="w-12 h-12 rounded-full object-cover mr-3 border-2 border-indigo-100"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 font-medium text-xl mr-3">
+                  {user?.profile?.full_name?.[0] || 'U'}
+                </div>
+              )}
+              <div>
+                <p className="font-medium text-gray-800 truncate max-w-[150px]">
+                  {user?.profile?.full_name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500">View profile</p>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 space-y-1">
+              <a 
+                href="/frontend_ai/dashboard" 
+                className="flex items-center gap-3 p-3 rounded-lg bg-indigo-50 text-indigo-700 font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span>Dashboard</span>
+              </a>
+              <a 
+                href="#" 
+                className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+                <span>My Closet</span>
+              </a>
+              <a 
+                href="#" 
+                className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span>Events</span>
+                <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full">12</span>
+              </a>
+              <a 
+                href="#" 
+                className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 9.143l-5.714 2.714L13 21l-2.286-6.857L5 11.857l5.714-2.714L13 3z"></path>
+                </svg>
+                <span>Recommendations</span>
+              </a>
+              <a 
+                href="/frontend_ai/profile" 
+                className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span>Profile</span>
+              </a>
+            </nav>
+
+            {/* Logout */}
             <button
               onClick={handleLogout}
-              className="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium mt-auto"
+              className="mt-auto flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
               </svg>
-              Logout
+              <span>Logout</span>
             </button>
-          </nav>
-        </div>
+          </div>
+        </aside>
 
         {/* Main Content */}
-        <div className="flex-1">
-          <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-10 md:ml-64">
-            {/* Welcome Message */}
-            <div className="pt-12 md:pt-0">
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mb-6 md:mb-8 lg:mb-10">
-                Welcome back, {user.profile.full_name.split(' ')[0]}
-              </h1>
-            </div>
-
-            {/* Wardrobe Section */}
-            <div className="mb-6 md:mb-8 lg:mb-10">
-              <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">Your Wardrobe</h2>
-              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 card bg-white p-4 md:p-6 lg:p-8 rounded-xl md:rounded-2xl shadow-md md:shadow-lg">
-                <div className="flex-1 w-full md:w-auto">
-                  <p className="text-2xl md:text-3xl font-bold text-gray-800">210 <span className="text-sm md:text-base font-normal text-gray-600">ITEMS</span></p>
-                  <p className="text-gray-600 text-base md:text-lg mb-4 md:mb-6">View your style inventory.</p>
-                  <a href="#" className="gradient-btn inline-flex items-center px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-medium text-xs md:text-sm">
-                    View Closet
-                    <svg className="w-3 h-3 md:w-4 md:h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                  </a>
+        <main className="flex-1 md:ml-64">
+          <div className="max-w-6xl mx-auto p-4 md:p-8">
+            {/* Welcome Section */}
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 md:p-8 mb-8">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+                    Welcome back, {user?.profile?.full_name?.split(' ')[0] || 'User'}!
+                  </h1>
+                  <p className="text-gray-600">Here's what's happening with your wardrobe today</p>
                 </div>
-                <img 
-                  src="/src/assets/AdobeStock_1105381229_Preview.jpeg" 
-                  alt="Closet Preview" 
-                  className="w-full md:w-48 h-32 object-cover rounded-lg"
-                />
-              </div>
-            </div>
-
-            {/* Events Section */}
-            <div className="mb-6 md:mb-8 lg:mb-10">
-              <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">Upcoming Events</h2>
-              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 card bg-white p-4 md:p-6 lg:p-8 rounded-xl md:rounded-2xl shadow-md md:shadow-lg">
-                <div className="flex-1 w-full md:w-auto">
-                  <p className="text-2xl md:text-3xl font-bold text-gray-800">3 <span className="text-sm md:text-base font-normal text-gray-600">EVENTS</span></p>
-                  <p className="text-gray-600 text-base md:text-lg mb-4 md:mb-6">Manage your schedule and outfits.</p>
-                  <a href="#" className="gradient-btn inline-flex items-center px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-medium text-xs md:text-sm">
-                    View Events
-                    <svg className="w-3 h-3 md:w-4 md:h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                  </a>
-                </div>
-                <img 
-                  src="https://via.placeholder.com/150x100" 
-                  alt="Events Preview" 
-                  className="w-full md:w-48 h-32 object-cover rounded-lg"
-                />
-              </div>
-            </div>
-
-            {/* Outfit of the Day Section */}
-            <div>
-              <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">Outfit of the Day</h2>
-              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 card bg-white p-4 md:p-6 lg:p-8 rounded-xl md:rounded-2xl shadow-md md:shadow-lg">
-                <div className="image-overlay w-full md:w-96 h-48 md:h-56">
-                  <img 
-                    src="https://via.placeholder.com/300x200" 
-                    alt="Outfit of the Day" 
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                </div>
-                <div className="flex-1 w-full md:w-auto">
-                  <p className="text-gray-600 text-base md:text-lg mb-2 md:mb-3">Curated just for you.</p>
-                  <p className="text-gray-600 text-base md:text-lg mb-4 md:mb-6">Shop similar styles.</p>
-                  <button className="gradient-btn inline-flex items-center px-4 py-2 md:px-6 md:py-3 rounded-full text-white font-medium text-xs md:text-sm">
-                    Discover More
-                    <svg className="w-3 h-3 md:w-4 md:h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
+                <div className="mt-4 md:mt-0">
+                  <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                    Quick Add
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 mt-auto">
-        <div className="max-w-5xl mx-auto px-4 py-6 md:py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-gray-600 text-sm">
-              © 2025 ClosetAI. All rights reserved.
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-lg bg-indigo-100 text-indigo-600 mr-4">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Total Items</p>
+                    <p className="text-2xl font-bold text-gray-800">210</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-lg bg-purple-100 text-purple-600 mr-4">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Upcoming Events</p>
+                    <p className="text-2xl font-bold text-gray-800">3</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-lg bg-pink-100 text-pink-600 mr-4">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Favorite Outfits</p>
+                    <p className="text-2xl font-bold text-gray-800">14</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-              <a href="#" className="text-gray-600 text-sm link-hover">About</a>
-              <a href="#" className="text-gray-600 text-sm link-hover">Contact</a>
-              <a href="#" className="text-gray-600 text-sm link-hover">Privacy Policy</a>
+
+            {/* Wardrobe Section */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Your Wardrobe</h2>
+                  <a href="#" className="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
+                    View All
+                  </a>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="w-full md:w-1/2">
+                    <img 
+                      src="/src/assets/AdobeStock_1105381229_Preview.jpeg" 
+                      alt="Closet Preview" 
+                      className="w-full h-48 md:h-64 object-cover rounded-lg"
+                    />
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Your Style Inventory</h3>
+                    <p className="text-gray-600 mb-4">View and manage all your clothing items in one place. Organize by category, season, or occasion.</p>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <p className="text-sm text-gray-500">Tops</p>
+                        <p className="text-xl font-bold text-gray-800">78</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Bottoms</p>
+                        <p className="text-xl font-bold text-gray-800">42</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Shoes</p>
+                        <p className="text-xl font-bold text-gray-800">24</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Accessories</p>
+                        <p className="text-xl font-bold text-gray-800">36</p>
+                      </div>
+                    </div>
+                    <button className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-colors shadow-md">
+                      View Full Closet
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Events Section */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Upcoming Events</h2>
+                  <a href="#" className="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
+                    View All
+                  </a>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="w-full md:w-1/2">
+                    <div className="bg-gray-100 h-48 md:h-64 rounded-lg flex items-center justify-center text-gray-400">
+                      <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Your Scheduled Events</h3>
+                    <p className="text-gray-600 mb-4">Plan your outfits for upcoming occasions and never be caught unprepared.</p>
+                    <div className="space-y-4 mb-6">
+                      <div className="flex items-start">
+                        <div className="p-2 bg-indigo-100 rounded-lg mr-4">
+                          <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">Business Meeting</p>
+                          <p className="text-sm text-gray-500">Tomorrow, 10:00 AM</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="p-2 bg-purple-100 rounded-lg mr-4">
+                          <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">Friend's Wedding</p>
+                          <p className="text-sm text-gray-500">Saturday, 2:00 PM</p>
+                        </div>
+                      </div>
+                    </div>
+                    <button className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-colors shadow-md">
+                      Plan Outfits
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Outfit Recommendations */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-800">Recommended Outfits</h2>
+                  <a href="#" className="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
+                    View All
+                  </a>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="w-full md:w-1/2">
+                    <div className="bg-gray-100 h-48 md:h-64 rounded-lg flex items-center justify-center text-gray-400">
+                      <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">AI-Curated Outfits</h3>
+                    <p className="text-gray-600 mb-4">Discover new outfit combinations based on your wardrobe and preferences.</p>
+                    <div className="flex flex-wrap gap-3 mb-6">
+                      <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">Casual</span>
+                      <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">Formal</span>
+                      <span className="px-3 py-1 bg-pink-100 text-pink-800 rounded-full text-sm">Work</span>
+                    </div>
+                    <button className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-colors shadow-md">
+                      Get Recommendations
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </main>
+      </div>
     </div>
   )
 }
