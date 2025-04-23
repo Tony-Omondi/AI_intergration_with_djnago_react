@@ -47,7 +47,7 @@ ROOT_URLCONF = 'backend_ai.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Add templates directory for password reset email templates
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -94,6 +94,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media settings for profile pictures
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
@@ -113,8 +117,6 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Use console backend for development
-
 # For production, you'd use something like this (example with Gmail):
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -124,8 +126,7 @@ EMAIL_HOST_USER = 'nitonito598@gmail.com'
 EMAIL_HOST_PASSWORD = 'brujnkmrlmmmzqud'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# Password reset settings
-PASSWORD_RESET_TIMEOUT = 3600  # 1 hour timeout for the reset link
+PASSWORD_RESET_TIMEOUT = 3600
 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
@@ -155,4 +156,11 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-LOGIN_REDIRECT_URL = '/api/auth/google/callback/'
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]

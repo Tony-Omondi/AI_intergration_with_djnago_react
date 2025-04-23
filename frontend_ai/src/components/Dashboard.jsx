@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
+
+const BASE_URL = 'http://localhost:8000' // Add base URL for the backend
 
 const Dashboard = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -7,13 +10,25 @@ const Dashboard = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    if (!token) {
-      navigate('/login')
-    } else if (userData) {
-      setUser(JSON.parse(userData))
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          navigate('/frontend_ai/login')
+          return
+        }
+        const response = await axios.get('http://localhost:8000/api/auth/profile/', {
+          headers: { Authorization: `Token ${token}` },
+        })
+        console.log('User API Response:', response.data)
+        setUser(response.data)
+      } catch (err) {
+        console.error('Failed to fetch user:', err)
+        localStorage.removeItem('token')
+        navigate('/frontend_ai/login')
+      }
     }
+    fetchUser()
   }, [navigate])
 
   const toggleSidebar = () => {
@@ -22,13 +37,19 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
+    navigate('/frontend_ai/login')
   }
 
   if (!user) {
     return <div>Loading...</div>
   }
+
+  // Ensure profile picture URL is absolute
+  const profilePictureUrl = user.profile.profile_picture 
+    ? user.profile.profile_picture.startsWith('http') 
+      ? user.profile.profile_picture 
+      : `${BASE_URL}${user.profile.profile_picture}`
+    : null
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
@@ -62,12 +83,18 @@ const Dashboard = () => {
 
           {/* User Info */}
           <div className="flex items-center mb-6 md:mb-8">
-            <img 
-              src="https://via.placeholder.com/40" 
-              alt="User Avatar" 
-              className="w-10 h-10 md:w-12 md:h-12 rounded-full mr-3"
-            />
-            <span className="text-gray-800 font-semibold text-base md:text-lg">{user.full_name}</span>
+            {profilePictureUrl ? (
+              <img 
+                src={profilePictureUrl} 
+                alt="User Avatar" 
+                className="w-10 h-10 md:w-12 md:h-12 rounded-full mr-3 object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 mr-3">
+                <span className="text-sm md:text-base">{user.profile.full_name[0]}</span>
+              </div>
+            )}
+            <span className="text-gray-800 font-semibold text-base md:text-lg">{user.profile.full_name}</span>
           </div>
 
           {/* Navigation */}
@@ -97,7 +124,7 @@ const Dashboard = () => {
               </svg>
               Recommendations
             </a>
-            <a href="#" className="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium mb-2">
+            <a href="/frontend_ai/profile" className="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 font-medium mb-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
               </svg>
@@ -121,7 +148,7 @@ const Dashboard = () => {
             {/* Welcome Message */}
             <div className="pt-12 md:pt-0">
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mb-6 md:mb-8 lg:mb-10">
-                Welcome back, {user.full_name.split(' ')[0]}
+                Welcome back, {user.profile.full_name.split(' ')[0]}
               </h1>
             </div>
 

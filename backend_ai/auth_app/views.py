@@ -9,8 +9,9 @@ from django.urls import reverse
 from rest_framework import generics, status, views
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import AllowAny
-from .serializers import UserSerializer
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .serializers import UserSerializer, UserProfileSerializer
+from .models import UserProfile
 import logging
 
 logger = logging.getLogger(__name__)
@@ -124,7 +125,6 @@ class PasswordResetRequestView(views.APIView):
 
         logger.info(f"Generated reset_url: {reset_url}")
 
-        # Plain-text version of the email
         plain_message = (
             f"Hello,\n\n"
             f"You requested to reset your password for your ClosetAI account. "
@@ -134,7 +134,6 @@ class PasswordResetRequestView(views.APIView):
             f"Thanks,\nThe ClosetAI Team"
         )
 
-        # HTML version of the email
         try:
             html_message = render_to_string('password_reset_email.html', {
                 'user': user,
@@ -144,18 +143,18 @@ class PasswordResetRequestView(views.APIView):
                 'token': token,
                 'reset_url': reset_url,
             })
+            logger.info(f"HTML message: {html_message}")
         except Exception as e:
             logger.error(f"Failed to render password reset email template: {str(e)}")
-            # If template rendering fails, use the plain-text version for both
             html_message = None
 
         subject = 'Password Reset Request for ClosetAI'
         send_mail(
             subject,
-            plain_message,  # Plain-text version
+            plain_message,
             'noreply@closetai.com',
             [user.email],
-            html_message=html_message,  # HTML version (or None if rendering failed)
+            html_message=html_message,
             fail_silently=False,
         )
 
@@ -196,3 +195,23 @@ class PasswordResetConfirmView(views.APIView):
             return Response({
                 'error': 'Invalid or expired reset link.'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class ProfileView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        profile = user.profile
+        logger.info(f"Received profile update request: {request.data}")
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            logger.info(f"Profile updated successfully: {serializer.data}")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        logger.error(f"Profile update failed: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

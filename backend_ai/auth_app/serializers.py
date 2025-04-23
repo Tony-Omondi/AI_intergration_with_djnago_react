@@ -2,12 +2,18 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['full_name', 'age', 'gender', 'location', 'profile_picture', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
 class UserSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(write_only=True)
+    profile = UserProfileSerializer()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'password', 'full_name']
+        fields = ['id', 'email', 'password', 'profile']
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate_email(self, value):
@@ -16,9 +22,10 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        full_name = validated_data.pop('full_name')
+        profile_data = validated_data.pop('profile', {})
+        full_name = profile_data.get('full_name', '')
         user = User.objects.create_user(
-            username=validated_data['email'],  # Ensure username is unique
+            username=validated_data['email'],
             email=validated_data['email'],
             password=validated_data['password']
         )

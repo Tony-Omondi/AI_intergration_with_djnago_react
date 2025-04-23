@@ -1,10 +1,11 @@
 from django.urls import path
-from .views import SignupView, LoginView, GoogleLoginCallbackView, PasswordResetRequestView, PasswordResetConfirmView
+from . import views
 
 urlpatterns = [
-    path('signup/', SignupView.as_view(), name='signup'),
-    path('login/', LoginView.as_view(), name='login'),
-    path('google/callback/', GoogleLoginCallbackView.as_view(), name='google_callback'),
-    path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
-    path('password-reset-confirm/<str:uidb64>/<str:token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('signup/', views.SignupView.as_view(), name='signup'),
+    path('login/', views.LoginView.as_view(), name='login'),
+    path('google/callback/', views.GoogleLoginCallbackView.as_view(), name='google_callback'),
+    path('password-reset/', views.PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('password-reset-confirm/<str:uidb64>/<str:token>/', views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('profile/', views.ProfileView.as_view(), name='profile'),
 ]
