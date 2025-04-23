@@ -88,6 +88,11 @@ const Login = () => {
           </button>
         </form>
 
+        {/* Forgot Password Link */}
+        <p className="text-center mt-4 text-gray-600 text-sm">
+          <a href="/frontend_ai/forgot-password" className="text-indigo-600 font-medium link-hover">Forgot Password?</a>
+        </p>
+
         {/* Divider */}
         <div className="flex items-center my-6">
           <div className="flex-1 border-t border-gray-300"></div>

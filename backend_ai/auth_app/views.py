@@ -1,10 +1,20 @@
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.urls import reverse
 from rest_framework import generics, status, views
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny
 from .serializers import UserSerializer
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -77,3 +87,92 @@ class GoogleLoginCallbackView(views.APIView):
         return Response({
             'error': 'Authentication failed'
         }, status=status.HTTP_401_UNAUTHORIZED)
+
+class PasswordResetRequestView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        if not email:
+            return Response({
+                'error': 'Email is required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Use filter() instead of get() to handle multiple users
+        users = User.objects.filter(email=email)
+        if not users.exists():
+            return Response({
+                'message': 'If an account with this email exists, a password reset link has been sent.'
+            }, status=status.HTTP_200_OK)
+
+        # Log a warning if multiple users are found
+        if users.count() > 1:
+            logger.warning(f"Multiple users found with email {email}: {users.count()} users")
+
+        # Take the first user (temporary fix)
+        user = users.first()
+
+        # Generate password reset token and UID
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+        # Build the reset link
+        domain = 'localhost:5173'  # Frontend domain
+        protocol = 'http'
+        reset_url = f"{protocol}://{domain}/frontend_ai/reset-password/{uid}/{token}/"
+
+        # Send the email
+        subject = 'Password Reset Request for ClosetAI'
+        message = render_to_string('password_reset_email.html', {
+            'user': user,
+            'domain': domain,
+            'protocol': protocol,
+            'uid': uid,
+            'token': token,
+        })
+        send_mail(
+            subject,
+            message,
+            'noreply@closetai.com',
+            [user.email],
+            html_message=message,
+            fail_silently=False,
+        )
+
+        return Response({
+            'message': 'If an account with this email exists, a password reset link has been sent.'
+        }, status=status.HTTP_200_OK)
+
+class PasswordResetConfirmView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token, *args, **kwargs):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            new_password = request.data.get('new_password')
+            confirm_password = request.data.get('confirm_password')
+
+            if not new_password or not confirm_password:
+                return Response({
+                    'error': 'New password and confirmation are required.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if new_password != confirm_password:
+                return Response({
+                    'error': 'Passwords do not match.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+            return Response({
+                'message': 'Password has been reset successfully.'
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'error': 'Invalid or expired reset link.'
+            }, status=status.HTTP_400_BAD_REQUEST)

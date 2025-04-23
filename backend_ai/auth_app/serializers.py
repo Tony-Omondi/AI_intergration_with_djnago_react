@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         full_name = validated_data.pop('full_name')
         user = User.objects.create_user(
-            username=validated_data['email'],
+            username=validated_data['email'],  # Ensure username is unique
             email=validated_data['email'],
             password=validated_data['password']
         )
