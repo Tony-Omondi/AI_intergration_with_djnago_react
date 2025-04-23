@@ -13,7 +13,6 @@ from rest_framework.permissions import AllowAny
 from .serializers import UserSerializer
 import logging
 
-# Set up logging
 logger = logging.getLogger(__name__)
 
 class SignupView(generics.CreateAPIView):
@@ -50,7 +49,14 @@ class LoginView(views.APIView):
                 'error': 'Email and password are required.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        user = authenticate(request, username=email, password=password)
+        users = User.objects.filter(email=email)
+        if not users.exists():
+            return Response({
+                'error': 'Invalid email or password.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = users.first()
+        user = authenticate(request, username=user.username, password=password)
         if user:
             login(request, user)
             token, created = Token.objects.get_or_create(user=user)
@@ -98,44 +104,58 @@ class PasswordResetRequestView(views.APIView):
                 'error': 'Email is required.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Use filter() instead of get() to handle multiple users
         users = User.objects.filter(email=email)
         if not users.exists():
             return Response({
                 'message': 'If an account with this email exists, a password reset link has been sent.'
             }, status=status.HTTP_200_OK)
 
-        # Log a warning if multiple users are found
         if users.count() > 1:
             logger.warning(f"Multiple users found with email {email}: {users.count()} users")
 
-        # Take the first user (temporary fix)
         user = users.first()
 
-        # Generate password reset token and UID
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-        # Build the reset link
-        domain = 'localhost:5173'  # Frontend domain
+        domain = 'localhost:5173'
         protocol = 'http'
         reset_url = f"{protocol}://{domain}/frontend_ai/reset-password/{uid}/{token}/"
 
-        # Send the email
+        logger.info(f"Generated reset_url: {reset_url}")
+
+        # Plain-text version of the email
+        plain_message = (
+            f"Hello,\n\n"
+            f"You requested to reset your password for your ClosetAI account. "
+            f"Click the link below to reset your password:\n\n"
+            f"{reset_url}\n\n"
+            f"If you did not request a password reset, please ignore this email.\n\n"
+            f"Thanks,\nThe ClosetAI Team"
+        )
+
+        # HTML version of the email
+        try:
+            html_message = render_to_string('password_reset_email.html', {
+                'user': user,
+                'domain': domain,
+                'protocol': protocol,
+                'uid': uid,
+                'token': token,
+                'reset_url': reset_url,
+            })
+        except Exception as e:
+            logger.error(f"Failed to render password reset email template: {str(e)}")
+            # If template rendering fails, use the plain-text version for both
+            html_message = None
+
         subject = 'Password Reset Request for ClosetAI'
-        message = render_to_string('password_reset_email.html', {
-            'user': user,
-            'domain': domain,
-            'protocol': protocol,
-            'uid': uid,
-            'token': token,
-        })
         send_mail(
             subject,
-            message,
+            plain_message,  # Plain-text version
             'noreply@closetai.com',
             [user.email],
-            html_message=message,
+            html_message=html_message,  # HTML version (or None if rendering failed)
             fail_silently=False,
         )
 
