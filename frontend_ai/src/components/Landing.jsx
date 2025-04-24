@@ -1,15 +1,57 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
+import { useRef, useEffect } from 'react';
 
 const Landing = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const marqueeRef = useRef(null);
 
   const handleGetStarted = () => {
-    navigate('/frontend_ai/login')
-  }
+    navigate('/frontend_ai/login');
+  };
 
   const handleSignup = () => {
-    navigate('/frontend_ai/signup')
-  }
+    navigate('/frontend_ai/signup');
+  };
+
+  const brandLogos = [
+    { name: 'Louis Vuitton', url: '/src/assets/louis-vuitton.svg' },
+    { name: 'Gucci', url: '/src/assets/gucci.svg' },
+    { name: 'Chanel', url: '/src/assets/chanel.svg' },
+    { name: 'Dior', url: '/src/assets/dior.svg' },
+    { name: 'Zara', url: '/src/assets/zara.svg' },
+  ];
+
+  useEffect(() => {
+    const marquee = marqueeRef.current;
+    if (!marquee) return;
+
+    let position = 0;
+    const speed = 1; // Pixels per frame
+
+    const animate = () => {
+      position -= speed;
+      if (position <= -marquee.scrollWidth / 2) {
+        position = 0;
+      }
+      marquee.style.transform = `translateX(${position}px)`;
+      requestAnimationFrame(animate);
+    };
+
+    const animationFrame = requestAnimationFrame(animate);
+
+    // Pause on hover
+    const handleMouseEnter = () => cancelAnimationFrame(animationFrame);
+    const handleMouseLeave = () => requestAnimationFrame(animate);
+
+    marquee.addEventListener('mouseenter', handleMouseEnter);
+    marquee.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      marquee.removeEventListener('mouseenter', handleMouseEnter);
+      marquee.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
@@ -84,19 +126,23 @@ const Landing = () => {
         </section>
 
         {/* Logo Cloud */}
-        <section className="py-12 bg-gray-50">
+        <section className="py-12 bg-gray-50 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <p className="text-center text-sm font-semibold uppercase text-gray-500 tracking-wide mb-8">
               Trusted by fashion enthusiasts worldwide
             </p>
-            <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex justify-center">
-                  <div className="h-12 w-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-500 font-medium">Logo {i}</span>
+            <div className="relative overflow-hidden">
+              <div ref={marqueeRef} className="flex" style={{ whiteSpace: 'nowrap' }}>
+                {brandLogos.concat(brandLogos).map((brand, index) => (
+                  <div key={index} className="flex-shrink-0 mx-4">
+                    <img
+                      src={brand.url}
+                      alt={`${brand.name} Logo`}
+                      className="h-12 w-auto opacity-70 hover:opacity-100 transition-opacity duration-300"
+                    />
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -198,7 +244,7 @@ const Landing = () => {
                 </div>
                 <div className="flex-1 relative">
                   <img 
-                    src="/src/assets/wardrobe-preview.jpg" 
+                    src="https://images.pexels.com/photos/5705490/pexels-photo-5705490.jpeg?auto=compress&cs=tinysrgb&w=600" 
                     alt="Wardrobe Preview" 
                     className="w-full h-auto rounded-xl shadow-md transition-all duration-500 hover:scale-105"
                   />
@@ -211,7 +257,7 @@ const Landing = () => {
               <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 bg-white rounded-2xl p-6 md:p-10 shadow-lg overflow-hidden border border-gray-100">
                 <div className="flex-1 relative">
                   <img 
-                    src="/src/assets/event-planning.jpg" 
+                    src="https://images.pexels.com/photos/976866/pexels-photo-976866.jpeg?auto=compress&cs=tinysrgb&w=600" 
                     alt="Events Preview" 
                     className="w-full h-auto rounded-xl shadow-md transition-all duration-500 hover:scale-105"
                   />
@@ -409,7 +455,7 @@ const Landing = () => {
         </div>
       </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Landing
+export default Landing;

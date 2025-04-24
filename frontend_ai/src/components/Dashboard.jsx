@@ -134,7 +134,7 @@ const Dashboard = () => {
                 <span>My Closet</span>
               </a>
               <a 
-                href="#" 
+                href="/frontend_ai/events" 
                 className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

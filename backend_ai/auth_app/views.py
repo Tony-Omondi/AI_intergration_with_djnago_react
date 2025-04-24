@@ -16,6 +16,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from rest_framework import viewsets, permissions
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Event
+from .serializers import EventSerializer
+
+class EventViewSet(viewsets.ModelViewSet):
+    serializer_class = EventSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Event.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer

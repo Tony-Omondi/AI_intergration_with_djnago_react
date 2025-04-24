@@ -7,7 +7,7 @@ import ForgotPassword from './components/ForgotPassword'
 import ResetPassword from './components/ResetPassword'
 import Profile from './components/Profile'
 import Landing from './components/Landing'
-
+import Events from './components/Events'
 
 function App() {
   return (
@@ -21,6 +21,7 @@ function App() {
         <Route path="/frontend_ai/forgot-password" element={<ForgotPassword />} />
         <Route path="/frontend_ai/reset-password/:uidb64/:token" element={<ResetPassword />} />
         <Route path="/frontend_ai/profile" element={<Profile />} />
+        <Route path="/frontend_ai/events" element={<Events />} />
         <Route path="*" element={<div>404 - Page Not Found</div>} />
       </Routes>
     </Router>
