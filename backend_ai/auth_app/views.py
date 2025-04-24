@@ -6,26 +6,24 @@ from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.urls import reverse
-from rest_framework import generics, status, views
+from rest_framework import generics, status, views, viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializers import UserSerializer, UserProfileSerializer
-from .models import UserProfile
+from rest_framework.authentication import TokenAuthentication
+from .serializers import UserSerializer, UserProfileSerializer, EventSerializer, ClothingItemSerializer
+from .models import UserProfile, Event, ClothingItem
 import logging
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Count
 
 logger = logging.getLogger(__name__)
 
-from rest_framework import viewsets, permissions
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Event
-from .serializers import EventSerializer
-
+# EventViewSet
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Add token authentication
 
     def get_queryset(self):
         return Event.objects.filter(user=self.request.user)
@@ -33,6 +31,33 @@ class EventViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+# ClothingItemViewSet
+class ClothingItemViewSet(viewsets.ModelViewSet):
+    serializer_class = ClothingItemSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Explicitly set token authentication
+
+    def get_queryset(self):
+        logger.info(f"User authenticated: {self.request.user.is_authenticated}")
+        return ClothingItem.objects.filter(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        logger.info("Fetching closet items")
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        
+        grouped_items = queryset.values('category').annotate(count=Count('id')).order_by('category')
+        grouped_data = {item['category']: item['count'] for item in grouped_items}
+        
+        return Response({
+            'items': serializer.data,
+            'grouped': grouped_data
+        })
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+# SignupView
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -51,6 +76,7 @@ class SignupView(generics.CreateAPIView):
             'error': serializer.errors.get('email', serializer.errors)
         }, status=status.HTTP_400_BAD_REQUEST)
 
+# LoginView
 class LoginView(views.APIView):
     permission_classes = [AllowAny]
 
@@ -90,6 +116,7 @@ class LoginView(views.APIView):
             'error': 'Invalid email or password.'
         }, status=status.HTTP_401_UNAUTHORIZED)
 
+# GoogleLoginCallbackView
 class GoogleLoginCallbackView(views.APIView):
     permission_classes = [AllowAny]
 
@@ -112,6 +139,7 @@ class GoogleLoginCallbackView(views.APIView):
             'error': 'Authentication failed'
         }, status=status.HTTP_401_UNAUTHORIZED)
 
+# PasswordResetRequestView
 class PasswordResetRequestView(views.APIView):
     permission_classes = [AllowAny]
 
@@ -179,6 +207,7 @@ class PasswordResetRequestView(views.APIView):
             'message': 'If an account with this email exists, a password reset link has been sent.'
         }, status=status.HTTP_200_OK)
 
+# PasswordResetConfirmView
 class PasswordResetConfirmView(views.APIView):
     permission_classes = [AllowAny]
 
@@ -213,8 +242,10 @@ class PasswordResetConfirmView(views.APIView):
                 'error': 'Invalid or expired reset link.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+# ProfileView
 class ProfileView(views.APIView):
     permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]  # Add token authentication
 
     def get(self, request, *args, **kwargs):
         user = request.user

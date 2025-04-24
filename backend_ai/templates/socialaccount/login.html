@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In with Google - ClosetAI</title>
+    <style>
+        /* Tailwind-like utility classes */
+        .bg-gray-50 { background-color: #f9fafb; }
+        .min-h-screen { min-height: 100vh; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .bg-white { background-color: #ffffff; }
+        .p-8 { padding: 2rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .shadow-lg { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .max-w-md { max-width: 28rem; }
+        .w-full { width: 100%; }
+        .flex { display: flex; }
+        .justify-center { justify-content: center; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .h-12 { height: 3rem; }
+        .w-auto { width: auto; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .font-bold { font-weight: 700; }
+        .text-gray-900 { color: #111827; }
+        .mb-4 { margin-bottom: 1rem; }
+        .text-center { text-align: center; }
+        .text-gray-600 { color: #4b5563; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .bg-gradient-to-r { background-image: linear-gradient(to right, var(--tw-gradient-stops)); }
+        .from-indigo-600 { --tw-gradient-from: #4f46e5; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(79, 70, 229, 0)); }
+        .to-purple-600 { --tw-gradient-to: #7c3aed; }
+        .text-white { color: #ffffff; }
+        .font-medium { font-weight: 500; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .rounded-full { border-radius: 9999px; }
+        .hover\:from-indigo-700:hover { --tw-gradient-from: #4338ca; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(67, 56, 202, 0)); }
+        .hover\:to-purple-700:hover { --tw-gradient-to: #6d28d9; }
+        .transition-all { transition-property: all; }
+        .duration-300 { transition-duration: 300ms; }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .transform { transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
+        .hover\:-translate-y-1:hover { --tw-translate-y: -0.25rem; }
+        .w-5 { width: 1.25rem; }
+        .h-5 { height: 1.25rem; }
+        .mr-2 { margin-right: 0.5rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .text-indigo-600 { color: #4f46e5; }
+        .hover\:underline:hover { text-decoration: underline; }
+        
+        /* Custom button styles */
+        .google-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background-image: linear-gradient(to right, #4f46e5, #7c3aed);
+            color: white;
+            font-weight: 500;
+            padding: 0.75rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 300ms;
+        }
+        
+        .google-button:hover {
+            background-image: linear-gradient(to right, #4338ca, #6d28d9);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-0.25rem);
+        }
+    </style>
+</head>
+<body style="background-color: #f9fafb; min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <div style="background-color: #ffffff; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); max-width: 28rem; width: 100%;">
+        <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+            <img 
+                src="https://cdn.worldvectorlogo.com/logos/zara-logo-1.svg" 
+                alt="ClosetAI Logo" 
+                style="height: 3rem; width: auto;"
+            />
+        </div>
+        <h2 style="font-size: 1.5rem; line-height: 2rem; font-weight: 700; color: #111827; margin-bottom: 1rem; text-align: center;">
+            Sign In to ClosetAI
+        </h2>
+        <p style="color: #4b5563; margin-bottom: 1.5rem; text-align: center;">
+            You are about to sign in using a third-party account from Google.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="csrfmiddlewaretoken" value="YOUR_CSRF_TOKEN_HERE">
+            <button 
+                type="submit" 
+                class="google-button"
+            >
+                <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem; fill: currentColor;" viewBox="0 0 24 24">
+                    <path d="M12.48 10.92v2.94h6.72c-.27 1.41-1.02 2.61-2.16 3.54v2.94h3.48c2.04-1.89 3.24-4.68 3.24-7.92 0-.75-.06-1.47-.18-2.16h-11.1zm-9.48-3.36h2.94v2.94h-2.94v2.94h-2.94v-2.94h-2.94v-2.94h2.94v-2.94h2.94v2.94zm3 5.88v-2.94h2.94v2.94h-2.94zm0 5.88v-2.94h2.94v2.94h-2.94zm9.48-5.88c-1.62 0-3 1.38-3 3s1.38 3 3 3 3-1.38 3-3-1.38-3-3-3zm-9.48 0v2.94h-2.94v2.94h2.94v2.94h-2.94v2.94h-2.94v-2.94h2.94v-2.94h-2.94v-2.94h2.94z"></path>
+                </svg>
+                Continue with Google
+            </button>
+        </form>
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <a href="http://localhost:5173/frontend_ai/" style="color: #4f46e5; text-decoration: none;">
+                Sign Out
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Simple hover effect for the sign out link
+        document.querySelector('a[href="/account/logout/"]').addEventListener('mouseover', function() {
+            this.style.textDecoration = 'underline';
+        });
+        document.querySelector('a[href="/account/logout/"]').addEventListener('mouseout', function() {
+            this.style.textDecoration = 'none';
+        });
+    </script>
+</body>
+</html>

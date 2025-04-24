@@ -125,7 +125,7 @@ const Dashboard = () => {
                 <span>Dashboard</span>
               </a>
               <a 
-                href="#" 
+                href="/frontend_ai/closet" 
                 className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,7 +144,7 @@ const Dashboard = () => {
                 <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full">12</span>
               </a>
               <a 
-                href="#" 
+                href="" 
                 className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,7 +253,7 @@ const Dashboard = () => {
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <div className="w-full md:w-1/2">
                     <img 
-                      src="/src/assets/AdobeStock_1105381229_Preview.jpeg" 
+                      src="https://images.pexels.com/photos/5705490/pexels-photo-5705490.jpeg?auto=compress&cs=tinysrgb&w=600" 
                       alt="Closet Preview" 
                       className="w-full h-48 md:h-64 object-cover rounded-lg"
                     />

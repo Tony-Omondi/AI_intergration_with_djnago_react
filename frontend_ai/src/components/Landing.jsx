@@ -14,11 +14,11 @@ const Landing = () => {
   };
 
   const brandLogos = [
-    { name: 'Louis Vuitton', url: '/src/assets/louis-vuitton.svg' },
-    { name: 'Gucci', url: '/src/assets/gucci.svg' },
-    { name: 'Chanel', url: '/src/assets/chanel.svg' },
-    { name: 'Dior', url: '/src/assets/dior.svg' },
-    { name: 'Zara', url: '/src/assets/zara.svg' },
+    { name: 'Louis Vuitton', url: 'https://cdn.worldvectorlogo.com/logos/zara-logo-1.svg' },
+    { name: 'Gucci', url: 'https://cdn.worldvectorlogo.com/logos/gucci-4.svg' },
+    { name: 'Chanel', url: 'https://cdn.worldvectorlogo.com/logos/chanel-1.svg' },
+    { name: 'Dior', url: 'https://cdn.worldvectorlogo.com/logos/dior.svg' },
+    { name: 'Zara', url: 'https://cdn.worldvectorlogo.com/logos/zara.svg' },
   ];
 
   useEffect(() => {

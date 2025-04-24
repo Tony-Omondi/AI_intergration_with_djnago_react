@@ -1,9 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import EventViewSet, SignupView, LoginView, GoogleLoginCallbackView, PasswordResetRequestView, PasswordResetConfirmView, ProfileView
+from .views import (
+    EventViewSet, SignupView, LoginView, GoogleLoginCallbackView,
+    PasswordResetRequestView, PasswordResetConfirmView, ProfileView,
+    ClothingItemViewSet
+)
 
 router = DefaultRouter()
 router.register(r'events', EventViewSet, basename='events')
+router.register(r'closet', ClothingItemViewSet, basename='closet')
 
 urlpatterns = [
     path('', include(router.urls)),

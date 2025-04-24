@@ -3,6 +3,16 @@ from django.contrib.auth.models import User
 from .models import UserProfile
 from rest_framework import serializers
 from .models import Event
+from rest_framework import serializers
+from .models import ClothingItem
+
+class ClothingItemSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = ClothingItem
+        fields = ['id', 'category', 'name', 'image', 'description', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
