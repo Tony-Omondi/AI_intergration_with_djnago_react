@@ -1,8 +1,5 @@
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -11,19 +8,18 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from .serializers import UserSerializer, UserProfileSerializer, EventSerializer, ClothingItemSerializer
-from .models import UserProfile, Event, ClothingItem
+from .serializers import UserSerializer, UserProfileSerializer, EventSerializer, ClothingItemSerializer, OTPSerializer
+from .models import UserProfile, Event, ClothingItem, OTP
 import logging
-from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# EventViewSet
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]  # Add token authentication
+    authentication_classes = [TokenAuthentication]
 
     def get_queryset(self):
         return Event.objects.filter(user=self.request.user)
@@ -31,11 +27,10 @@ class EventViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-# ClothingItemViewSet
 class ClothingItemViewSet(viewsets.ModelViewSet):
     serializer_class = ClothingItemSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]  # Explicitly set token authentication
+    authentication_classes = [TokenAuthentication]
 
     def get_queryset(self):
         logger.info(f"User authenticated: {self.request.user.is_authenticated}")
@@ -45,10 +40,8 @@ class ClothingItemViewSet(viewsets.ModelViewSet):
         logger.info("Fetching closet items")
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        
         grouped_items = queryset.values('category').annotate(count=Count('id')).order_by('category')
         grouped_data = {item['category']: item['count'] for item in grouped_items}
-        
         return Response({
             'items': serializer.data,
             'grouped': grouped_data
@@ -57,7 +50,6 @@ class ClothingItemViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-# SignupView
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -67,41 +59,94 @@ class SignupView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
+            otp = OTP.objects.create(user=user, purpose='signup')
+            plain_message = (
+                f"Hello,\n\n"
+                f"Thank you for signing up with ClosetAI. Your OTP for email verification is: {otp.code}\n\n"
+                f"This OTP is valid for 10 minutes. Please enter it to verify your email.\n\n"
+                f"Thanks,\nThe ClosetAI Team"
+            )
+            try:
+                html_message = render_to_string('otp_email.html', {
+                    'user': user,
+                    'otp': otp.code,
+                })
+            except Exception as e:
+                logger.error(f"Failed to render OTP email template: {str(e)}")
+                html_message = None
+
+            send_mail(
+                subject='ClosetAI Email Verification OTP',
+                message=plain_message,
+                from_email='noreply@closetai.com',
+                recipient_list=[user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
             return Response({
-                'token': token.key,
-                'user': serializer.data
+                'message': 'User created. Please verify your email with the OTP sent.',
+                'user_id': user.id
             }, status=status.HTTP_201_CREATED)
         return Response({
-            'error': serializer.errors.get('email', serializer.errors)
+            'errors': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
-# LoginView
-class LoginView(views.APIView):
+class VerifyOTPView(views.APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, *args, **kwargs):
-        return Response({
-            'error': 'Please use POST to login with email and password.'
-        }, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        code = request.data.get('code')
+        purpose = request.data.get('purpose', 'signup')
+
+        if not user_id or not code:
+            return Response({
+                'errors': 'User ID and OTP code are required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+            otp = OTP.objects.filter(user=user, code=code, purpose=purpose).latest('created_at')
+            if not otp.is_valid():
+                return Response({
+                    'errors': 'OTP has expired or is invalid.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if purpose == 'signup':
+                user.is_active = True
+                user.save()
+                token, created = Token.objects.get_or_create(user=user)
+                return Response({
+                    'token': token.key,
+                    'user': {
+                        'id': user.id,
+                        'email': user.email,
+                        'full_name': user.profile.full_name,
+                    }
+                }, status=status.HTTP_200_OK)
+            elif purpose == 'password_reset':
+                return Response({
+                    'message': 'OTP verified. You can now reset your password.',
+                    'user_id': user.id
+                }, status=status.HTTP_200_OK)
+        except (User.DoesNotExist, OTP.DoesNotExist):
+            return Response({
+                'errors': 'Invalid user or OTP.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class LoginView(views.APIView):
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
         password = request.data.get('password')
         if not email or not password:
             return Response({
-                'error': 'Email and password are required.'
+                'errors': 'Email and password are required.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        users = User.objects.filter(email=email)
-        if not users.exists():
-            return Response({
-                'error': 'Invalid email or password.'
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
-        user = users.first()
-        user = authenticate(request, username=user.username, password=password)
-        if user:
+        user = authenticate(request, username=email, password=password)
+        if user and user.is_active:
             login(request, user)
             token, created = Token.objects.get_or_create(user=user)
             return Response({
@@ -113,10 +158,9 @@ class LoginView(views.APIView):
                 }
             }, status=status.HTTP_200_OK)
         return Response({
-            'error': 'Invalid email or password.'
+            'errors': 'Invalid email, password, or unverified account.'
         }, status=status.HTTP_401_UNAUTHORIZED)
 
-# GoogleLoginCallbackView
 class GoogleLoginCallbackView(views.APIView):
     permission_classes = [AllowAny]
 
@@ -136,10 +180,9 @@ class GoogleLoginCallbackView(views.APIView):
                 }
             }, status=status.HTTP_200_OK)
         return Response({
-            'error': 'Authentication failed'
+            'errors': 'Authentication failed'
         }, status=status.HTTP_401_UNAUTHORIZED)
 
-# PasswordResetRequestView
 class PasswordResetRequestView(views.APIView):
     permission_classes = [AllowAny]
 
@@ -147,105 +190,80 @@ class PasswordResetRequestView(views.APIView):
         email = request.data.get('email')
         if not email:
             return Response({
-                'error': 'Email is required.'
+                'errors': 'Email is required.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         users = User.objects.filter(email=email)
         if not users.exists():
             return Response({
-                'message': 'If an account with this email exists, a password reset link has been sent.'
+                'message': 'If an account with this email exists, an OTP has been sent.'
             }, status=status.HTTP_200_OK)
 
-        if users.count() > 1:
-            logger.warning(f"Multiple users found with email {email}: {users.count()} users")
-
         user = users.first()
-
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-        domain = 'localhost:5173'
-        protocol = 'http'
-        reset_url = f"{protocol}://{domain}/frontend_ai/reset-password/{uid}/{token}/"
-
-        logger.info(f"Generated reset_url: {reset_url}")
-
+        otp = OTP.objects.create(user=user, purpose='password_reset')
         plain_message = (
             f"Hello,\n\n"
-            f"You requested to reset your password for your ClosetAI account. "
-            f"Click the link below to reset your password:\n\n"
-            f"{reset_url}\n\n"
+            f"You requested to reset your password for your ClosetAI account. Your OTP is: {otp.code}\n\n"
+            f"This OTP is valid for 10 minutes. Please enter it to proceed with resetting your password.\n\n"
             f"If you did not request a password reset, please ignore this email.\n\n"
             f"Thanks,\nThe ClosetAI Team"
         )
-
         try:
-            html_message = render_to_string('password_reset_email.html', {
+            html_message = render_to_string('otp_email.html', {
                 'user': user,
-                'domain': domain,
-                'protocol': protocol,
-                'uid': uid,
-                'token': token,
-                'reset_url': reset_url,
+                'otp': otp.code,
             })
-            logger.info(f"HTML message: {html_message}")
         except Exception as e:
-            logger.error(f"Failed to render password reset email template: {str(e)}")
+            logger.error(f"Failed to render OTP email template: {str(e)}")
             html_message = None
 
-        subject = 'Password Reset Request for ClosetAI'
         send_mail(
-            subject,
-            plain_message,
-            'noreply@closetai.com',
-            [user.email],
+            subject='ClosetAI Password Reset OTP',
+            message=plain_message,
+            from_email='noreply@closetai.com',
+            recipient_list=[user.email],
             html_message=html_message,
             fail_silently=False,
         )
-
         return Response({
-            'message': 'If an account with this email exists, a password reset link has been sent.'
+            'message': 'If an account with this email exists, an OTP has been sent.',
+            'user_id': user.id
         }, status=status.HTTP_200_OK)
 
-# PasswordResetConfirmView
 class PasswordResetConfirmView(views.APIView):
     permission_classes = [AllowAny]
 
-    def post(self, request, uidb64, token, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not user_id or not new_password or not confirm_password:
+            return Response({
+                'errors': 'User ID, new password, and confirmation are required.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({
+                'errors': 'Passwords do not match.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            user = None
-
-        if user is not None and default_token_generator.check_token(user, token):
-            new_password = request.data.get('new_password')
-            confirm_password = request.data.get('confirm_password')
-
-            if not new_password or not confirm_password:
-                return Response({
-                    'error': 'New password and confirmation are required.'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            if new_password != confirm_password:
-                return Response({
-                    'error': 'Passwords do not match.'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
+            user = User.objects.get(id=user_id)
             user.set_password(new_password)
             user.save()
+            OTP.objects.filter(user=user, purpose='password_reset').delete()
             return Response({
                 'message': 'Password has been reset successfully.'
             }, status=status.HTTP_200_OK)
-        else:
+        except User.DoesNotExist:
             return Response({
-                'error': 'Invalid or expired reset link.'
+                'errors': 'Invalid user.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-# ProfileView
 class ProfileView(views.APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]  # Add token authentication
+    authentication_classes = [TokenAuthentication]
 
     def get(self, request, *args, **kwargs):
         user = request.user

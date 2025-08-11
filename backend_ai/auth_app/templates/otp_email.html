@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; }
+        .otp { font-size: 24px; font-weight: bold; color: #4f46e5; text-align: center; }
+        .footer { margin-top: 20px; text-align: center; color: #777; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://your-logo-url.com/closetai-logo.jpg" alt="ClosetAI Logo" style="height: 50px;">
+            <h2>{{ purpose|title }} OTP</h2>
+        </div>
+        <p>Hello {{ user.profile.full_name }},</p>
+        <p>Your OTP for {{ purpose|title }} is:</p>
+        <p class="otp">{{ otp }}</p>
+        <p>This OTP is valid for 10 minutes. Please enter it to proceed.</p>
+        <p>If you did not request this, please ignore this email.</p>
+        <div class="footer">
+            <p>Thanks,<br>The ClosetAI Team</p>
+        </div>
+    </div>
+</body>
+</html>

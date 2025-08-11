@@ -123,7 +123,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'nitonito598@gmail.com'
-EMAIL_HOST_PASSWORD = 'brujnkmrlmmmzqud'
+EMAIL_HOST_PASSWORD = 'ouuippiqxvunrffy'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 PASSWORD_RESET_TIMEOUT = 3600

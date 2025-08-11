@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile
-from rest_framework import serializers
-from .models import Event
-from rest_framework import serializers
-from .models import ClothingItem
+from .models import UserProfile, Event, ClothingItem, OTP
+
+class OTPSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OTP
+        fields = ['code']
 
 class ClothingItemSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False)
@@ -13,6 +14,12 @@ class ClothingItemSerializer(serializers.ModelSerializer):
         model = ClothingItem
         fields = ['id', 'category', 'name', 'image', 'description', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+    def validate_category(self, value):
+        valid_categories = [choice[0] for choice in ClothingItem.CATEGORY_CHOICES]
+        if value not in valid_categories:
+            raise serializers.ValidationError("Invalid category.")
+        return value
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,13 +48,19 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile', {})
-        full_name = profile_data.get('full_name', '')
         user = User.objects.create_user(
             username=validated_data['email'],
             email=validated_data['email'],
-            password=validated_data['password']
+            password=validated_data['password'],
+            is_active=False  # User is inactive until OTP verification
         )
-        UserProfile.objects.create(user=user, full_name=full_name)
+        UserProfile.objects.create(
+            user=user,
+            full_name=profile_data.get('full_name', ''),
+            age=profile_data.get('age'),
+            gender=profile_data.get('gender'),
+            location=profile_data.get('location')
+        )
         return user
 
     def to_representation(self, instance):
