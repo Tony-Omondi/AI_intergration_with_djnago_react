@@ -70,6 +70,8 @@ class SignupView(generics.CreateAPIView):
                 html_message = render_to_string('otp_email.html', {
                     'user': user,
                     'otp': otp.code,
+                    'protocol': 'https' if request.is_secure() else 'http',
+                    'domain': request.get_host(),
                 })
             except Exception as e:
                 logger.error(f"Failed to render OTP email template: {str(e)}")
@@ -116,12 +118,18 @@ class VerifyOTPView(views.APIView):
                 user.is_active = True
                 user.save()
                 token, created = Token.objects.get_or_create(user=user)
+                # Ensure profile exists
+                try:
+                    full_name = user.profile.full_name
+                except UserProfile.DoesNotExist:
+                    UserProfile.objects.create(user=user, full_name=user.email.split('@')[0])
+                    full_name = user.email.split('@')[0]
                 return Response({
                     'token': token.key,
                     'user': {
                         'id': user.id,
                         'email': user.email,
-                        'full_name': user.profile.full_name,
+                        'full_name': full_name,
                     }
                 }, status=status.HTTP_200_OK)
             elif purpose == 'password_reset':
@@ -149,12 +157,18 @@ class LoginView(views.APIView):
         if user and user.is_active:
             login(request, user)
             token, created = Token.objects.get_or_create(user=user)
+            # Handle missing profile
+            try:
+                full_name = user.profile.full_name
+            except UserProfile.DoesNotExist:
+                UserProfile.objects.create(user=user, full_name=email.split('@')[0])
+                full_name = email.split('@')[0]
             return Response({
                 'token': token.key,
                 'user': {
                     'id': user.id,
                     'email': user.email,
-                    'full_name': user.profile.full_name,
+                    'full_name': full_name,
                 }
             }, status=status.HTTP_200_OK)
         return Response({
@@ -167,7 +181,10 @@ class GoogleLoginCallbackView(views.APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         if user.is_authenticated:
-            if not hasattr(user, 'profile'):
+            # Ensure profile exists
+            try:
+                full_name = user.profile.full_name
+            except UserProfile.DoesNotExist:
                 full_name = user.get_full_name() or user.email.split('@')[0]
                 UserProfile.objects.create(user=user, full_name=full_name)
             token, created = Token.objects.get_or_create(user=user)
@@ -176,7 +193,7 @@ class GoogleLoginCallbackView(views.APIView):
                 'user': {
                     'id': user.id,
                     'email': user.email,
-                    'full_name': user.profile.full_name,
+                    'full_name': full_name,
                 }
             }, status=status.HTTP_200_OK)
         return Response({
@@ -212,6 +229,8 @@ class PasswordResetRequestView(views.APIView):
             html_message = render_to_string('otp_email.html', {
                 'user': user,
                 'otp': otp.code,
+                'protocol': 'https' if request.is_secure() else 'http',
+                'domain': request.get_host(),
             })
         except Exception as e:
             logger.error(f"Failed to render OTP email template: {str(e)}")
