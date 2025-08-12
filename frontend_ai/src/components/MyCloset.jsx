@@ -8,7 +8,7 @@ const MyCloset = () => {
   const [items, setItems] = useState([]);
   const [grouped, setGrouped] = useState({});
   const [formData, setFormData] = useState({
-    category: 'jackets',
+    category: 'tshirts',
     name: '',
     image: null,
     description: '',
@@ -18,6 +18,37 @@ const MyCloset = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
+
+  const categoryOptions = [
+    { value: 'tshirts', label: 'T-shirts' },
+    { value: 'shirts_blouses', label: 'Shirts/Blouses' },
+    { value: 'sweaters_hoodies', label: 'Sweaters/Hoodies' },
+    { value: 'tank_tops_camisoles', label: 'Tank Tops/Camisoles' },
+    { value: 'jeans', label: 'Jeans' },
+    { value: 'trousers_pants', label: 'Trousers/Pants' },
+    { value: 'shorts', label: 'Shorts' },
+    { value: 'skirts', label: 'Skirts' },
+    { value: 'dresses', label: 'Dresses' },
+    { value: 'jumpsuits', label: 'Jumpsuits' },
+    { value: 'jackets', label: 'Jackets' },
+    { value: 'coats', label: 'Coats' },
+    { value: 'blazers', label: 'Blazers' },
+    { value: 'raincoats_trenchcoats', label: 'Raincoats/Trenchcoats' },
+    { value: 'hats_caps', label: 'Hats/Caps' },
+    { value: 'scarves', label: 'Scarves' },
+    { value: 'belts', label: 'Belts' },
+    { value: 'gloves', label: 'Gloves' },
+    { value: 'sunglasses', label: 'Sunglasses' },
+    { value: 'jewelry', label: 'Jewelry' },
+    { value: 'sneakers', label: 'Sneakers' },
+    { value: 'boots', label: 'Boots' },
+    { value: 'sandals', label: 'Sandals' },
+    { value: 'formal_shoes', label: 'Formal Shoes' },
+    { value: 'underwear', label: 'Underwear' },
+    { value: 'bras', label: 'Bras' },
+    { value: 'pajamas', label: 'Pajamas' },
+    { value: 'lounge_sets', label: 'Lounge Sets' },
+  ];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -92,7 +123,7 @@ const MyCloset = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setFormData({ category: 'jackets', name: '', image: null, description: '' });
+      setFormData({ category: 'tshirts', name: '', image: null, description: '' });
       fetchClosetItems();
     } catch (err) {
       setError(err.message || 'Failed to upload item. Please try again.');
@@ -133,10 +164,11 @@ const MyCloset = () => {
 
   const itemsByCategory = {};
   items.forEach((item) => {
-    if (!itemsByCategory[item.category]) {
-      itemsByCategory[item.category] = [];
+    const categoryLabel = categoryOptions.find(opt => opt.value === item.category)?.label || item.category;
+    if (!itemsByCategory[categoryLabel]) {
+      itemsByCategory[categoryLabel] = [];
     }
-    itemsByCategory[item.category].push(item);
+    itemsByCategory[categoryLabel].push(item);
   });
 
   return (
@@ -212,7 +244,7 @@ const MyCloset = () => {
                 <span>My Closet</span>
               </a>
               <a 
-                href="#" 
+                href="/frontend_ai/events" 
                 className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,12 +319,11 @@ const MyCloset = () => {
                       onChange={handleInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
-                      <option value="jackets">Jackets</option>
-                      <option value="shirts">Shirts</option>
-                      <option value="pants">Pants</option>
-                      <option value="shoes">Shoes</option>
-                      <option value="accessories">Accessories</option>
-                      <option value="dresses">Dresses</option>
+                      {categoryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   
@@ -375,7 +406,7 @@ const MyCloset = () => {
                   >
                     <p className="text-2xl font-bold text-indigo-600 mb-1">{count}</p>
                     <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wider">
-                      {category}
+                      {categoryOptions.find(opt => opt.value === category)?.label || category}
                     </h3>
                   </div>
                 ))}
