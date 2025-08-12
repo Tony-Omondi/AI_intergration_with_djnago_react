@@ -35,7 +35,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -94,7 +93,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Media settings for profile pictures
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -117,7 +115,6 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# For production, you'd use something like this (example with Gmail):
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -128,20 +125,27 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 PASSWORD_RESET_TIMEOUT = 3600
 
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+# Updated allauth settings to remove deprecated warnings
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_LOGIN_REDIRECT_URL = 'http://localhost:5173/frontend_ai/google-callback'
+ACCOUNT_SIGNUP_REDIRECT_URL = 'http://localhost:5173/frontend_ai/verify-otp'
+SOCIALACCOUNT_LOGIN_REDIRECT_URL = 'http://localhost:5173/frontend_ai/google-callback'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+LOGIN_REDIRECT_URL = 'http://localhost:5173/frontend_ai/google-callback'
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '134348066560-05ustg001j5oi1m231mag5ofjellij40.apps.googleusercontent.com',
-            'secret': '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',
+            'client_id': '532809781253-39iuhvpkej6b2s3i17aqeiukrfl324el.apps.googleusercontent.com',
+            'secret': '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',
             'key': '',
         },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
+        'REDIRECT_URI': 'http://localhost:8000/accounts/google/login/callback/',
     }
 }
 

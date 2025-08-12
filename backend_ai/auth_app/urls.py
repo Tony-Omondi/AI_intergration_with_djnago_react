@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
 from .views import (
     EventViewSet, SignupView, LoginView, GoogleLoginCallbackView,
@@ -19,4 +20,6 @@ urlpatterns = [
     path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset-confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('profile/', ProfileView.as_view(), name='profile'),
+    path('accounts/profile/', RedirectView.as_view(url='http://localhost:5173/frontend_ai/dashboard'), name='account_profile'),
+    path('accounts/', include('allauth.socialaccount.urls')),
 ]
