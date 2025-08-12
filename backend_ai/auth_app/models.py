@@ -35,23 +35,45 @@ class OTP(models.Model):
 
 class ClothingItem(models.Model):
     CATEGORY_CHOICES = [
-        ('jackets', 'Jackets'),
-        ('shirts', 'Shirts'),
-        ('pants', 'Pants'),
-        ('shoes', 'Shoes'),
-        ('accessories', 'Accessories'),
+        ('tshirts', 'T-shirts'),
+        ('shirts_blouses', 'Shirts/Blouses'),
+        ('sweaters_hoodies', 'Sweaters/Hoodies'),
+        ('tank_tops_camisoles', 'Tank Tops/Camisoles'),
+        ('jeans', 'Jeans'),
+        ('trousers_pants', 'Trousers/Pants'),
+        ('shorts', 'Shorts'),
+        ('skirts', 'Skirts'),
         ('dresses', 'Dresses'),
+        ('jumpsuits', 'Jumpsuits'),
+        ('jackets', 'Jackets'),
+        ('coats', 'Coats'),
+        ('blazers', 'Blazers'),
+        ('raincoats_trenchcoats', 'Raincoats/Trenchcoats'),
+        ('hats_caps', 'Hats/Caps'),
+        ('scarves', 'Scarves'),
+        ('belts', 'Belts'),
+        ('gloves', 'Gloves'),
+        ('sunglasses', 'Sunglasses'),
+        ('jewelry', 'Jewelry'),
+        ('sneakers', 'Sneakers'),
+        ('boots', 'Boots'),
+        ('sandals', 'Sandals'),
+        ('formal_shoes', 'Formal Shoes'),
+        ('underwear', 'Underwear'),
+        ('bras', 'Bras'),
+        ('pajamas', 'Pajamas'),
+        ('lounge_sets', 'Lounge Sets'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clothing_items')
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)  # Increased max_length
     name = models.CharField(max_length=100)
     image = models.ImageField(upload_to='closet_images/', blank=True, null=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name} ({self.category}) - {self.user.username}"
+        return f"{self.name} ({self.get_category_display()}) - {self.user.username}"
 
 class Event(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='events')
