@@ -8,11 +8,14 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from .serializers import UserSerializer, UserProfileSerializer, EventSerializer, ClothingItemSerializer, OTPSerializer
-from .models import UserProfile, Event, ClothingItem, OTP
+from .serializers import UserSerializer, UserProfileSerializer, EventSerializer, ClothingItemSerializer, OTPSerializer, RecommendationSerializer
+from .models import UserProfile, Event, ClothingItem, OTP, Recommendation
 import logging
 from django.db.models import Count
 from django.utils import timezone
+import requests
+import json
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +52,74 @@ class ClothingItemViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class RecommendationViewSet(viewsets.ModelViewSet):
+    serializer_class = RecommendationSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def get_queryset(self):
+        return Recommendation.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        event_id = request.data.get('event_id')
+        if not event_id:
+            return Response({'error': 'Event ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            event = Event.objects.get(id=event_id, user=request.user)
+        except Event.DoesNotExist:
+            return Response({'error': 'Event not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Fetch weather data (OpenWeatherMap free tier)
+        weather_api_key = settings.OPENWEATHERMAP_API_KEY
+        if not weather_api_key:
+            logger.error("OPENWEATHERMAP_API_KEY is not set.")
+            return Response({'error': 'Weather API key is missing.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        weather_url = f"http://api.openweathermap.org/data/2.5/forecast?q={event.location}&appid={weather_api_key}&units=metric"
+        try:
+            weather_response = requests.get(weather_url)
+            weather_response.raise_for_status()
+            weather_data = weather_response.json()
+            event_date = event.date.strftime('%Y-%m-%d')
+            forecast = next((item for item in weather_data['list'] if item['dt_txt'].startswith(event_date)), None)
+            weather_info = forecast['weather'][0]['description'] if forecast else 'Unknown'
+            temperature = forecast['main']['temp'] if forecast else 'Unknown'
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to fetch weather data: {str(e)}")
+            weather_info = 'Weather data unavailable'
+            temperature = 'Unknown'
+
+        # Fetch clothing items
+        clothing_items = ClothingItem.objects.filter(user=request.user)
+
+        # --- Mock "Free ChatGPT" Outfit Recommendation ---
+        clothing_list = list(clothing_items.values_list('id', 'name', 'category', 'description'))
+        selected_items = [item[0] for item in clothing_list[:3]]  # pick first 3 items
+
+        recommendation_data = {
+            "description": (
+                f"For your event '{event.name}' on {event.date.strftime('%Y-%m-%d')} at {event.location}, "
+                f"expecting {weather_info} with about {temperature}°C, "
+                f"we suggest wearing a stylish yet comfortable outfit — perhaps combining a light jacket, "
+                f"jeans, and sneakers for balance between style and comfort."
+            ),
+            "clothing_item_ids": selected_items
+        }
+        # --- End Mock ---
+
+        # Save recommendation
+        recommendation = Recommendation.objects.create(
+            user=request.user,
+            event=event,
+            description=recommendation_data.get('description', ''),
+            weather_info=f"{weather_info} ({temperature}°C)"
+        )
+        recommendation.clothing_items.set(recommendation_data["clothing_item_ids"])
+
+        serializer = self.get_serializer(recommendation)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()

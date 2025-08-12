@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile, Event, ClothingItem, OTP
+from .models import UserProfile, Event, ClothingItem, OTP, Recommendation
 
 class OTPSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,6 +30,24 @@ class EventSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'location', 'date', 'eventNotes', 'weatherNotes', 'created_at']
         read_only_fields = ['id', 'created_at']
 
+class RecommendationSerializer(serializers.ModelSerializer):
+    event = EventSerializer(read_only=True)
+    clothing_items = ClothingItemSerializer(many=True, read_only=True)
+    clothing_item_ids = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=True
+    )
+
+    class Meta:
+        model = Recommendation
+        fields = ['id', 'event', 'clothing_items', 'clothing_item_ids', 'description', 'weather_info', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def create(self, validated_data):
+        clothing_item_ids = validated_data.pop('clothing_item_ids')
+        recommendation = Recommendation.objects.create(**validated_data)
+        recommendation.clothing_items.set(clothing_item_ids)
+        return recommendation
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -55,7 +73,7 @@ class UserSerializer(serializers.ModelSerializer):
             username=validated_data['email'],
             email=validated_data['email'],
             password=validated_data['password'],
-            is_active=False  # User is inactive until OTP verification
+            is_active=False
         )
         UserProfile.objects.create(
             user=user,

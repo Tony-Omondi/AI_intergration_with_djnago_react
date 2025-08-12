@@ -4,12 +4,13 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     EventViewSet, SignupView, LoginView, GoogleLoginCallbackView,
     PasswordResetRequestView, PasswordResetConfirmView, ProfileView,
-    ClothingItemViewSet, VerifyOTPView
+    ClothingItemViewSet, VerifyOTPView, RecommendationViewSet
 )
 
 router = DefaultRouter()
 router.register(r'events', EventViewSet, basename='events')
 router.register(r'closet', ClothingItemViewSet, basename='closet')
+router.register(r'recommendations', RecommendationViewSet, basename='recommendations')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -66,7 +66,7 @@ class ClothingItem(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clothing_items')
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)  # Increased max_length
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     name = models.CharField(max_length=100)
     image = models.ImageField(upload_to='closet_images/', blank=True, null=True)
     description = models.TextField(blank=True)
@@ -104,3 +104,14 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.full_name}'s Profile"
+
+class Recommendation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recommendations')
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='recommendations')
+    clothing_items = models.ManyToManyField(ClothingItem, related_name='recommendations')
+    description = models.TextField()  # AI-generated recommendation text
+    weather_info = models.TextField(blank=True)  # Weather data at the time of recommendation
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Recommendation for {self.event.name} - {self.user.username}"
