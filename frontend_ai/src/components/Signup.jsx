@@ -38,6 +38,10 @@ const Signup = () => {
       setError('Password must be at least 8 characters.');
       return;
     }
+    if (parseInt(age) <= 0 || isNaN(parseInt(age))) {
+      setError('Age must be a positive number.');
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -48,7 +52,7 @@ const Signup = () => {
       });
       navigate('/frontend_ai/verify-otp', { state: { user_id: response.data.user_id, purpose: 'signup' } });
     } catch (err) {
-      setError(err.response?.data?.errors?.email?.[0] || err.response?.data?.errors || 'Signup failed. Please try again.');
+      setError(err.response?.data?.errors || 'Signup failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

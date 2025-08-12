@@ -19,7 +19,7 @@ function App() {
         <Route path="/frontend_ai/signup" element={<Signup />} />
         <Route path="/frontend_ai/login" element={<Login />} />
         <Route path="/frontend_ai/dashboard" element={<Dashboard />} />
-        <Route path="/google-callback" element={<GoogleCallback />} />
+        <Route path="/frontend_ai/google-callback" element={<GoogleCallback />} />
         <Route path="/frontend_ai/forgot-password" element={<PasswordResetRequest />} />
         <Route path="/frontend_ai/verify-otp" element={<VerifyOTP />} />
         <Route path="/frontend_ai/reset-password" element={<ResetPassword />} />
