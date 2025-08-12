@@ -10,6 +10,7 @@ import Profile from './components/Profile';
 import Landing from './components/Landing';
 import Events from './components/Events';
 import MyCloset from './components/MyCloset';
+import Recommendations from './components/Recommendations';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/frontend_ai/profile" element={<Profile />} />
         <Route path="/frontend_ai/events" element={<Events />} />
         <Route path="/frontend_ai/closet" element={<MyCloset />} />
+        <Route path="/frontend_ai/recommendations" element={<Recommendations />} />
         <Route path="*" element={<div>404 - Page Not Found</div>} />
       </Routes>
     </Router>

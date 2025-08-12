@@ -144,7 +144,7 @@ const Dashboard = () => {
                 <span className="ml-auto bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full">12</span>
               </a>
               <a 
-                href="" 
+                href="/frontend_ai/recommendations" 
                 className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
