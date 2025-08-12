@@ -22,9 +22,12 @@ class ClothingItemSerializer(serializers.ModelSerializer):
         return value
 
 class EventSerializer(serializers.ModelSerializer):
+    eventNotes = serializers.CharField(source='event_notes', required=False)
+    weatherNotes = serializers.CharField(source='weather_notes', required=False)
+
     class Meta:
         model = Event
-        fields = ['id', 'name', 'location', 'date', 'event_notes', 'weather_notes', 'created_at']
+        fields = ['id', 'name', 'location', 'date', 'eventNotes', 'weatherNotes', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 class UserProfileSerializer(serializers.ModelSerializer):

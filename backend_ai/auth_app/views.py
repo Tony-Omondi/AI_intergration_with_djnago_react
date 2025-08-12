@@ -118,7 +118,6 @@ class VerifyOTPView(views.APIView):
                 user.is_active = True
                 user.save()
                 token, created = Token.objects.get_or_create(user=user)
-                # Ensure profile exists
                 try:
                     full_name = user.profile.full_name
                 except UserProfile.DoesNotExist:
@@ -157,7 +156,6 @@ class LoginView(views.APIView):
         if user and user.is_active:
             login(request, user)
             token, created = Token.objects.get_or_create(user=user)
-            # Handle missing profile
             try:
                 full_name = user.profile.full_name
             except UserProfile.DoesNotExist:
@@ -181,7 +179,6 @@ class GoogleLoginCallbackView(views.APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         if user.is_authenticated:
-            # Ensure profile exists
             try:
                 full_name = user.profile.full_name
             except UserProfile.DoesNotExist:
